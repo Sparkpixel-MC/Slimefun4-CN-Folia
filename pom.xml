@@ -5,7 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.slimefun</groupId>
-    <artifactId>Slimefun</artifactId>
+    <artifactId>slimefun</artifactId>
 
     <version>4.1-SNAPSHOT</version>
     <inceptionYear>2013</inceptionYear>
