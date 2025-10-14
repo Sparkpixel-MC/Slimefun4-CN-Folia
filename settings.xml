@@ -18,12 +18,12 @@
             </activation>
             <repositories>
                 <repository>
-                    <id>github</id>
+                    <id>github-1</id>
                     <url>https://maven.pkg.github.com/Sparkpixel-MC/Folia-Adapter</url>
                 </repository>
                 
                 <repository>
-                    <id>github</id>
+                    <id>github-2</id>
                     <url>https://maven.pkg.github.com/Sparkpixel-MC/Dough-API-Folia</url>
                 </repository>
             </repositories>

@@ -106,7 +106,7 @@
         </repository>
         
         <repository>
-          <id>github</id>
+          <id>github-1</id>
           <url>https://maven.pkg.github.com/Sparkpixel-MC/Folia-Adapter</url>
           <snapshots>
             <enabled>true</enabled>
@@ -114,7 +114,7 @@
         </repository>
 
         <repository>
-          <id>github</id>
+          <id>github-2</id>
           <url>https://maven.pkg.github.com/Sparkpixel-MC/Dough-API-Folia</url>
           <snapshots>
             <enabled>true</enabled>
@@ -314,6 +314,7 @@
             <version>${paper.version}-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        
         <dependency>
             <groupId>com.molean</groupId>
             <artifactId>FoliaAdapter</artifactId>
