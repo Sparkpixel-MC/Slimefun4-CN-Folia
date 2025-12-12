@@ -1,5 +1,6 @@
 package io.github.thebusybiscuit.slimefun4.core.services.github;
 
+import com.mojang.authlib.GameProfile;
 import com.molean.folia.adapter.Folia;
 import io.github.bakedlibs.dough.skins.CustomGameProfile;
 import io.github.bakedlibs.dough.skins.PlayerSkin;
@@ -155,14 +156,25 @@ class GitHubTask implements Runnable {
         }
 
         if (uuid.isPresent()) {
-            CompletableFuture<PlayerSkin> future = PlayerSkin.fromPlayerUUID(Slimefun.instance(), uuid.get());
+            CompletableFuture<PlayerSkin> future = null;
+            if (Slimefun.instance() != null) {
+                future = PlayerSkin.fromPlayerUUID(Slimefun.instance(), uuid.get());
+            }
             // fix: # 1128 1.21.9 compatibility
-            Optional<String> skin =
-                    Optional.of(CustomGameProfile.getBase64Texture(future.get().getProfile()));
+            CustomGameProfile profile = null;
+            if (future != null) {
+                profile = future.get().getProfile();
+            }
+            String texture = null;
+            if (profile != null) {
+                texture = profile.getBase64Texture();
+            }
+            Optional<String> skin = Optional.ofNullable(texture);
             skins.put(contributor.getMinecraftName(), skin.orElse(""));
             return skin.orElse(null);
         } else {
             return null;
         }
+
     }
 }
