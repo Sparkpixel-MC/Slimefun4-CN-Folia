@@ -39,6 +39,8 @@ public class ClearDataCommand extends SubCommand {
                         Slimefun.getLocalization().sendMessage(sender, "commands.cleardata.worldNotFound", true);
                         return;
                     }
+
+                    worlds.add(toAdd);
                 }
 
                 if (args[2].equals("*")) {

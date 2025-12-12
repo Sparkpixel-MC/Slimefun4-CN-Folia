@@ -2,6 +2,7 @@ package city.norain.slimefun4.timings;
 
 import city.norain.slimefun4.SlimefunExtended;
 import city.norain.slimefun4.timings.entry.TimingEntry;
+import com.molean.folia.adapter.Folia;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +17,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -24,9 +24,12 @@ import lombok.Getter;
 import org.bukkit.command.CommandSender;
 
 public class SQLProfiler {
-    private final ThreadFactory threadFactory = r -> new Thread(r, "Slimefun SQL Profiler");
-
-    private final ExecutorService executor = Executors.newFixedThreadPool(2, threadFactory);
+    private final ExecutorService reportExecutor = Executors.newFixedThreadPool(1, r -> {
+        Thread t = new Thread(r, "Slimefun SQL Reporter");
+        t.setUncaughtExceptionHandler((et, e) -> Slimefun.logger()
+                .log(Level.SEVERE, "A error occurred in sql report generator thread " + et.getName(), e));
+        return t;
+    });
 
     @Getter
     private volatile boolean isProfiling = false;
@@ -38,6 +41,10 @@ public class SQLProfiler {
     private final Set<CommandSender> subscribers = new CopyOnWriteArraySet<>();
 
     private long startTime = -1L;
+
+    public void initSlowSqlCheck(@Nonnull Slimefun plugin) {
+        Folia.getScheduler().runTaskTimerAsynchronously(plugin, new SlowSqlCheckTask(() -> samplingEntries), 20L, 20L);
+    }
 
     public void start() {
         if (isProfiling) return;
@@ -82,7 +89,13 @@ public class SQLProfiler {
         samplingEntries.clear();
         isProfiling = false;
 
-        executor.execute(this::generateReport);
+        reportExecutor.execute(this::generateReport);
+    }
+
+    public void shutdown() {
+        stop();
+
+        reportExecutor.shutdownNow();
     }
 
     public void generateReport() {

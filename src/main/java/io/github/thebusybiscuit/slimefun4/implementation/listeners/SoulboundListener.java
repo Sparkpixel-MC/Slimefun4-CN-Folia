@@ -1,5 +1,6 @@
 package io.github.thebusybiscuit.slimefun4.implementation.listeners;
 
+import com.molean.folia.adapter.Folia;
 import io.github.thebusybiscuit.slimefun4.core.attributes.Soulbound;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
@@ -8,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nonnull;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -29,6 +31,22 @@ public class SoulboundListener implements Listener {
 
     public SoulboundListener(@Nonnull Slimefun plugin) {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        Folia.getScheduler()
+                .runTaskTimerAsynchronously(
+                        plugin,
+                        () -> {
+                            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                                if (soulbound.containsKey(onlinePlayer.getUniqueId())) {
+                                    Folia.getScheduler().runTask(plugin, onlinePlayer, () -> {
+                                        if (!onlinePlayer.isDead()) {
+                                            returnSoulboundItems(onlinePlayer);
+                                        }
+                                    });
+                                }
+                            }
+                        },
+                        20,
+                        20);
     }
 
     @EventHandler

@@ -1,5 +1,6 @@
 package com.xzavier0722.mc.plugin.slimefun4.storage.controller;
 
+import city.norain.slimefun4.utils.SlimefunPoolExecutor;
 import city.norain.slimefun4.utils.TaskTimer;
 import com.molean.folia.adapter.SchedulerContext;
 import com.xzavier0722.mc.plugin.slimefun4.storage.adapter.IDataSourceAdapter;
@@ -13,16 +14,20 @@ import com.xzavier0722.mc.plugin.slimefun4.storage.task.QueuedWriteTask;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
+/**
+ * {@link ADataController} 是 Slimefun 数据库控制器的抽象类，
+ * 提供了对数据源适配器的访问和数据操作的基本方法。
+ * <br/>
+ * 该类提供了对数据库的增删查改操作以及异步读写的支持。
+ */
 public abstract class ADataController {
     private final DataType dataType;
     private final Map<ScopeKey, QueuedWriteTask> scheduledWriteTasks;
@@ -32,15 +37,15 @@ public abstract class ADataController {
     /**
      * 数据库读取调度器
      */
-    private ExecutorService readExecutor;
+    protected ExecutorService readExecutor;
     /**
      * 数据库写入调度器
      */
-    private ExecutorService writeExecutor;
+    protected ExecutorService writeExecutor;
     /**
      * 数据库回调调度器
      */
-    private ExecutorService callbackExecutor;
+    protected ExecutorService callbackExecutor;
     /**
      * 标记当前控制器是否已被关闭
      */
@@ -63,14 +68,31 @@ public abstract class ADataController {
         this.dataAdapter = dataAdapter;
         dataAdapter.initStorage(dataType);
         dataAdapter.patch();
-        readExecutor = Executors.newFixedThreadPool(maxReadThread, new DatabaseThreadFactory("SF-DB-Read-Thread #"));
-        writeExecutor = Executors.newFixedThreadPool(maxWriteThread, new DatabaseThreadFactory("SF-DB-Write-Thread #"));
-        callbackExecutor = new ThreadPoolExecutor(
-                0,
-                128,
+        readExecutor = new SlimefunPoolExecutor(
+                "SF-DB-Read-Executor",
+                maxReadThread,
+                maxReadThread,
                 10,
                 TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(128),
+                new LinkedBlockingQueue<>(),
+                new DatabaseThreadFactory("SF-DB-Read-Thread #"));
+
+        writeExecutor = new SlimefunPoolExecutor(
+                "SF-DB-Write-Executor",
+                maxWriteThread,
+                maxWriteThread,
+                10,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(),
+                new DatabaseThreadFactory("SF-DB-Write-Thread #"));
+
+        callbackExecutor = new SlimefunPoolExecutor(
+                "SF-DB-Callback-Executor",
+                1,
+                Runtime.getRuntime().availableProcessors() / 2,
+                10,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(),
                 new DatabaseThreadFactory("SF-DB-CB-Thread #"));
     }
 
@@ -85,38 +107,29 @@ public abstract class ADataController {
         destroyed = true;
         readExecutor.shutdownNow();
         callbackExecutor.shutdownNow();
+
         try {
             float totalTask = scheduledWriteTasks.size();
             var pendingTask = scheduledWriteTasks.size();
-            var taskTimer = new TaskTimer();
-            var previousTask = pendingTask;
+            var timer = new TaskTimer();
 
             while (pendingTask > 0) {
                 var doneTaskPercent = String.format("%.1f", (totalTask - pendingTask) / totalTask * 100);
                 logger.log(Level.INFO, "数据保存中，请稍候... 剩余 {0} 个任务 ({1}%)", new Object[] {pendingTask, doneTaskPercent});
                 TimeUnit.SECONDS.sleep(1);
-                pendingTask = scheduledWriteTasks.size();
+                var currentTask = scheduledWriteTasks.size();
 
-                if (previousTask > pendingTask) {
-                    taskTimer.reset();
-                    previousTask = pendingTask;
-                    continue;
-                }
-
-                // 展示疑似死锁任务
-                if ((taskTimer.peek() / 1000 / 60) > 2) {
-                    logger.log(Level.WARNING, "检测到数据保存时出现的长耗时任务，可以截图下列信息供反馈参考 ({0}):\n", new Object[] {
-                        scheduledWriteTasks.size()
-                    });
-                    var taskSnapshot = Map.copyOf(scheduledWriteTasks);
-                    for (var task : taskSnapshot.entrySet()) {
-                        var key = task.getKey();
-                        var value = task.getValue();
-                        logger.log(Level.WARNING, "On scope {0}:", new Object[] {key});
-                        logger.log(Level.WARNING, "     {0}", new Object[] {value});
-                        logger.log(Level.WARNING, " ");
+                if (pendingTask == currentTask) {
+                    if (timer.peek() / 1000 > 10) {
+                        Slimefun.logger().log(Level.WARNING, "检测到耗时保存任务, 请将下面的线程堆栈 完整 发送给开发者以便定位问题: ");
+                        Slimefun.logger()
+                                .log(Level.WARNING, Slimefun.getProfiler().snapshotThreads());
                     }
+                } else {
+                    timer.reset();
                 }
+
+                pendingTask = scheduledWriteTasks.size();
             }
 
             logger.info("数据保存完成.");
@@ -163,8 +176,7 @@ public abstract class ADataController {
 
                 @Override
                 protected void onError(Throwable e) {
-                    Slimefun.logger().log(Level.SEVERE, "Exception thrown while executing write task: ");
-                    e.printStackTrace();
+                    Slimefun.logger().log(Level.SEVERE, "Exception thrown while executing write task: ", e);
                 }
             };
             queuedTask.queue(key, task);
