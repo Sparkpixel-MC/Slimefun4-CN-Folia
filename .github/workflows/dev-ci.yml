@@ -46,7 +46,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
           name: Artifacts
-          path: target/Slimefun-*.jar
+          path: target/*.jar
 
     - name: Publish package
       run: mvn --batch-mode deploy
