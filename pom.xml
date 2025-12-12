@@ -154,18 +154,16 @@
                             <version>1.18.34</version>
                         </path>
                     </annotationProcessorPaths>
-                    <includeSystemScope>true</includeSystemScope>
                 </configuration>
             </plugin>
 
             <plugin>
-                <!-- Dependency shading -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
 
                 <configuration>
-                    <!-- Relocate these to avoid clashes and conflicts -->
+                    <!-- 保持原有的重定位配置 -->
                     <relocations>
                         <relocation>
                             <pattern>io.github.bakedlibs.dough</pattern>
@@ -189,7 +187,24 @@
                         </relocation>
                     </relocations>
 
-                    <!-- Exclude unneeded metadata files from shaded dependencies -->
+                    <!-- 修改artifactSet以只包含需要的依赖 -->
+                    <artifactSet>
+                        <includes>
+                            <!-- 只包含这些依赖 -->
+                            <include>io.github.baked-libs:dough-api</include>
+                            <include>io.papermc:paperlib</include>
+                            <include>com.konghq:unirest-java</include>
+                            <include>commons-lang:commons-lang</include>
+                            <include>net.guizhanss:guizhanlib-updater</include>
+                            <include>com.github.Xzavier0722:SlimefunCompLib</include>
+                        </includes>
+                        <!-- 排除FoliaAdapter -->
+                        <excludes>
+                            <exclude>com.molean:FoliaAdapter</exclude>
+                        </excludes>
+                    </artifactSet>
+
+                    <!-- 保持原有的过滤器配置 -->
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
@@ -206,16 +221,10 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
-                        <configuration>
-                            <artifactSet>
-                                <excludes>
-                                    <exclude>com.molean:FoliaAdapter</exclude>
-                                </excludes>
-                            </artifactSet>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
+
 
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
