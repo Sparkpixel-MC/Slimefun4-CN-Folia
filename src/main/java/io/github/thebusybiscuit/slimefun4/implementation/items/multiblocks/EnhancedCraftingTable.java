@@ -22,6 +22,7 @@ import org.bukkit.block.Dispenser;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 public class EnhancedCraftingTable extends AbstractCraftingTable {
 
@@ -110,9 +111,24 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
 
     private boolean isCraftable(Inventory inv, ItemStack[] recipe) {
         for (int j = 0; j < inv.getContents().length; j++) {
-            if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], recipe[j], true, true, false, false)) {
-                if (SlimefunItem.getByItem(recipe[j]) instanceof SlimefunBackpack) {
-                    if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], recipe[j], false, true, false, false)) {
+            ItemStack item = inv.getContents()[j];
+            ItemStack recipeItem = recipe[j];
+
+            // 创建物品副本以移除消失诅咒，避免影响配方匹配
+            ItemStack itemToCompare = item;
+            if (item != null && item.hasItemMeta()) {
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null && meta.hasEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE)) {
+                    itemToCompare = item.clone();
+                    ItemMeta clonedMeta = itemToCompare.getItemMeta();
+                    clonedMeta.removeEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE);
+                    itemToCompare.setItemMeta(clonedMeta);
+                }
+            }
+
+            if (!SlimefunUtils.isItemSimilar(itemToCompare, recipeItem, true, true, false, false)) {
+                if (SlimefunItem.getByItem(recipeItem) instanceof SlimefunBackpack) {
+                    if (!SlimefunUtils.isItemSimilar(itemToCompare, recipeItem, false, true, false, false)) {
                         return false;
                     }
                 } else {
