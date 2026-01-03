@@ -135,6 +135,7 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                     ItemMeta meta = item.getItemMeta();
                     System.out.println("  物品有消失诅咒: " + meta.hasEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE));
                     System.out.println("  物品有描述: " + meta.hasLore());
+                    System.out.println("  物品有显示名称: " + meta.hasDisplayName());
                     if (meta.hasLore()) {
                         System.out.println("  物品描述: " + meta.getLore());
                     }
@@ -144,6 +145,7 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                     ItemMeta meta = recipeItem.getItemMeta();
                     System.out.println("  配方有消失诅咒: " + meta.hasEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE));
                     System.out.println("  配方有描述: " + meta.hasLore());
+                    System.out.println("  配方有显示名称: " + meta.hasDisplayName());
                     if (meta.hasLore()) {
                         System.out.println("  配方描述: " + meta.getLore());
                     }
@@ -220,7 +222,21 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                             }
                         }
 
-                        itemToCompare.setItemMeta(clonedMeta);
+                        // 检查 ItemMeta 是否为空（没有显示名称、描述、附魔等）
+                        boolean metaIsEmpty = !clonedMeta.hasDisplayName() &&
+                                              !clonedMeta.hasLore() &&
+                                              !clonedMeta.hasEnchants() &&
+                                              !clonedMeta.hasCustomModelData();
+
+                        System.out.println("  ItemMeta 是否为空: " + metaIsEmpty);
+
+                        // 如果 Meta 为空且配方没有 Meta，则清除 Meta
+                        if (metaIsEmpty && !recipeItem.hasItemMeta()) {
+                            System.out.println("  清除空的 ItemMeta");
+                            itemToCompare.setItemMeta(null);
+                        } else {
+                            itemToCompare.setItemMeta(clonedMeta);
+                        }
                     }
                 }
             }
