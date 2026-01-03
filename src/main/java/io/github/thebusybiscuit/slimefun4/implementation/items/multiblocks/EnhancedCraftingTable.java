@@ -114,6 +114,33 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
             ItemStack item = inv.getContents()[j];
             ItemStack recipeItem = recipe[j];
 
+            // 调试日志
+            if (item != null && recipeItem != null) {
+                System.out.println("[EnhancedCraftingTable] 槽位 " + j + ":");
+                System.out.println("  物品类型: " + item.getType());
+                System.out.println("  配方类型: " + recipeItem.getType());
+                System.out.println("  物品有Meta: " + item.hasItemMeta());
+                System.out.println("  配方有Meta: " + recipeItem.hasItemMeta());
+
+                if (item.hasItemMeta()) {
+                    ItemMeta meta = item.getItemMeta();
+                    System.out.println("  物品有消失诅咒: " + meta.hasEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE));
+                    System.out.println("  物品有描述: " + meta.hasLore());
+                    if (meta.hasLore()) {
+                        System.out.println("  物品描述: " + meta.getLore());
+                    }
+                }
+
+                if (recipeItem.hasItemMeta()) {
+                    ItemMeta meta = recipeItem.getItemMeta();
+                    System.out.println("  配方有消失诅咒: " + meta.hasEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE));
+                    System.out.println("  配方有描述: " + meta.hasLore());
+                    if (meta.hasLore()) {
+                        System.out.println("  配方描述: " + meta.getLore());
+                    }
+                }
+            }
+
             // 创建物品副本以移除消失诅咒和保险相关描述，避免影响配方匹配
             ItemStack itemToCompare = item;
             if (item != null && item.hasItemMeta()) {
@@ -124,6 +151,7 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                     // 检查是否有消失诅咒
                     if (meta.hasEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE)) {
                         needsClone = true;
+                        System.out.println("  检测到消失诅咒，将移除");
                     }
 
                     // 检查是否有保险相关的描述
@@ -142,6 +170,7 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                                 line.contains("此物品受保险系统保护") ||
                                 line.contains("无保险保护")) {
                                 needsClone = true;
+                                System.out.println("  检测到保险描述: " + line);
                                 break;
                             }
                         }
@@ -154,6 +183,7 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                         // 移除消失诅咒
                         if (clonedMeta.hasEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE)) {
                             clonedMeta.removeEnchant(org.bukkit.enchantments.Enchantment.VANISHING_CURSE);
+                            System.out.println("  已移除消失诅咒");
                         }
 
                         // 移除保险相关的描述
@@ -173,6 +203,7 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                                 line.contains("此物品受保险系统保护") ||
                                 line.contains("无保险保护")
                             );
+                            System.out.println("  移除保险描述后: " + lore);
                             if (lore.isEmpty()) {
                                 clonedMeta.setLore(null);
                             } else {
@@ -185,12 +216,19 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                 }
             }
 
-            if (!SlimefunUtils.isItemSimilar(itemToCompare, recipeItem, true, true, false, false)) {
+            boolean isSimilar = SlimefunUtils.isItemSimilar(itemToCompare, recipeItem, true, true, false, false);
+            System.out.println("  物品相似性检查结果: " + isSimilar);
+
+            if (!isSimilar) {
                 if (SlimefunItem.getByItem(recipeItem) instanceof SlimefunBackpack) {
-                    if (!SlimefunUtils.isItemSimilar(itemToCompare, recipeItem, false, true, false, false)) {
+                    System.out.println("  尝试背包模式检查...");
+                    boolean backpackSimilar = SlimefunUtils.isItemSimilar(itemToCompare, recipeItem, false, true, false, false);
+                    System.out.println("  背包模式检查结果: " + backpackSimilar);
+                    if (!backpackSimilar) {
                         return false;
                     }
                 } else {
+                    System.out.println("  物品不匹配，配方失败");
                     return false;
                 }
             }
