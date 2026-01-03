@@ -47,15 +47,21 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
 
     @Override
     public void onInteract(Player p, Block b) {
+        System.out.println("[EnhancedCraftingTable] onInteract 被调用，玩家: " + p.getName());
         Block possibleDispenser = b.getRelative(BlockFace.DOWN);
         BlockState state = PaperLib.getBlockState(possibleDispenser, false).getState();
 
         if (state instanceof Dispenser dispenser) {
+            System.out.println("[EnhancedCraftingTable] 找到投掷器");
             Inventory inv = dispenser.getInventory();
+            System.out.println("[EnhancedCraftingTable] 投掷器内容: " + java.util.Arrays.toString(inv.getContents()));
             List<ItemStack[]> inputs = RecipeType.getRecipeInputList(this);
+            System.out.println("[EnhancedCraftingTable] 配方数量: " + inputs.size());
 
             for (ItemStack[] input : inputs) {
+                System.out.println("[EnhancedCraftingTable] 检查配方 " + inputs.indexOf(input) + ": " + java.util.Arrays.toString(input));
                 if (isCraftable(inv, input)) {
+                    System.out.println("[EnhancedCraftingTable] 配方匹配成功！");
                     ItemStack output =
                             RecipeType.getRecipeOutputList(this, input).clone();
                     MultiBlockCraftEvent event = new MultiBlockCraftEvent(p, this, input, output);
@@ -63,12 +69,15 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
                     Folia.getPluginManager().ce(event);
                     if (!event.isCancelled() && SlimefunUtils.canPlayerUseItem(p, output, true)) {
                         craft(inv, possibleDispenser, p, b, event.getOutput());
+                    } else {
+                        System.out.println("[EnhancedCraftingTable] 合成被取消或玩家无权限");
                     }
 
                     return;
                 }
             }
 
+            System.out.println("[EnhancedCraftingTable] 所有配方检查完毕，未找到匹配");
             if (inv.isEmpty()) {
                 Slimefun.getLocalization().sendMessage(p, "machines.inventory-empty", true);
             } else {
