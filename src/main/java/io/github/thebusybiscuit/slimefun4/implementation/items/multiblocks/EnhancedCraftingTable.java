@@ -123,6 +123,16 @@ public class EnhancedCraftingTable extends AbstractCraftingTable {
             ItemStack item = inv.getContents()[j];
             ItemStack recipeItem = recipe[j];
 
+            // 跳过空槽位
+            if (item == null && recipeItem == null) {
+                continue;
+            }
+
+            // 如果一个为空另一个不为空，则不匹配
+            if (item == null || recipeItem == null) {
+                return false;
+            }
+
             // 调试日志
             if (item != null && recipeItem != null) {
                 System.out.println("[EnhancedCraftingTable] 槽位 " + j + ":");
