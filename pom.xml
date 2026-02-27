@@ -197,6 +197,7 @@
                             <include>commons-lang:commons-lang</include>
                             <include>net.guizhanss:guizhanlib-updater</include>
                             <include>com.github.Xzavier0722:SlimefunCompLib</include>
+                            <include>com.zaxxer:HikariCP</include>
                         </includes>
                         <!-- 排除FoliaAdapter -->
                         <excludes>
