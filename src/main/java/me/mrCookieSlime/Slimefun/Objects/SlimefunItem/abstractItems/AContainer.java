@@ -356,6 +356,12 @@ public abstract class AContainer extends SlimefunItem
 
     protected void tick(Block b) {
         BlockMenu inv = StorageCacheUtils.getMenu(b.getLocation());
+
+        // Add null check
+        if (inv != null) {
+            return;
+        }
+
         CraftingOperation currentOperation = processor.getOperation(b);
 
         if (currentOperation != null) {
@@ -412,6 +418,9 @@ public abstract class AContainer extends SlimefunItem
     }
 
     protected MachineRecipe findNextRecipe(BlockMenu inv) {
+        if (inv == null)
+            return null;
+
         Map<Integer, ItemStack> inventory = Collections.synchronizedMap(new HashMap<>());
 
         for (int slot : getInputSlots()) {
@@ -448,7 +457,6 @@ public abstract class AContainer extends SlimefunItem
                 found.clear();
             }
         }
-
         return null;
     }
 

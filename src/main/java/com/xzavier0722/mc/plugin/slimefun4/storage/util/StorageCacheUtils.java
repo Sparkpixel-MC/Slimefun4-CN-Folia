@@ -297,11 +297,13 @@ public class StorageCacheUtils {
     }
 
     public static void executeAfterLoad(
-            ASlimefunDataContainer data, Runnable execute, Pair<Boolean, Pair<Entity, Location>> runOnMainThread) {
+        ASlimefunDataContainer data, Runnable execute, Pair<Boolean, Pair<Entity, Location>> runOnMainThread) {
         if (data instanceof SlimefunBlockData blockData) {
-            executeAfterLoad(blockData, execute, runOnMainThread);
+            SchedulerContext context = extractSchedulerContext(runOnMainThread);
+            executeAfterLoad(blockData, execute, context);
         } else if (data instanceof SlimefunUniversalData universalData) {
-            executeAfterLoad(universalData, execute, runOnMainThread);
+            SchedulerContext context = extractSchedulerContext(runOnMainThread);
+            executeAfterLoad(universalData, execute, context);
         }
     }
 
@@ -322,6 +324,23 @@ public class StorageCacheUtils {
                 execute.run();
             }
         });
+    }
+
+    private static SchedulerContext extractSchedulerContext(Pair<Boolean, Pair<Entity, Location>> runOnMainThread) {
+        if (runOnMainThread == null) return null;
+
+        Pair<Entity, Location> entityLocPair = runOnMainThread.getSecondValue();
+        if (entityLocPair == null) return null;
+        Entity entity = entityLocPair.getFirstValue();
+        if (entity != null) {
+            return SchedulerContext.of(entity);
+        }
+        Location loc = entityLocPair.getSecondValue();
+        if (loc != null) {
+            return SchedulerContext.of(loc);
+        }
+
+        return null;
     }
 
     public static void executeAfterLoad(SlimefunUniversalData data, Runnable execute, SchedulerContext context) {
